@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,6 +69,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.SideEffect
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import coil.compose.AsyncImage
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.onkar.projectx.data.CalendarDay
@@ -300,17 +304,33 @@ fun QuantityStepper(
 }
 
 @Composable
-fun TopViewBasic(title: String) {
+fun TopViewBasic(title: String, navController: NavHostController? = null) {
     val colorScheme = MaterialTheme.colorScheme
+    val systemUiController = rememberSystemUiController()
+    SideEffect {
+        systemUiController.setStatusBarColor(colorScheme.surface, darkIcons = false)
+    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colorScheme.surface) // Black background from theme
-            .padding(16.dp), verticalAlignment = Alignment.CenterVertically
+            .background(colorScheme.surface)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (navController != null) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Text(
-            text = title, color = colorScheme.onSurface, // White text on black background
+            text = title,
+            color = colorScheme.onSurface,
             style = MaterialTheme.typography.titleMedium
         )
     }

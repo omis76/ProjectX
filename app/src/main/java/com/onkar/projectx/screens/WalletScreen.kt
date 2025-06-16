@@ -38,10 +38,11 @@ import com.onkar.projectx.viewmodels.WalletViewModel
 @Composable
 fun WalletScreen(navController: NavHostController, walletViewModel: WalletViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
-        TopViewBasic("Wallet")
+        TopViewBasic("Wallet", navController)
         WalletView(modifier = Modifier.weight(1f), walletViewModel)
         Button(
             onClick = { navController.navigate(Screen.Payment.route) },
+            enabled = walletViewModel.amount.toDoubleOrNull()?.let { it > 0 } == true,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
