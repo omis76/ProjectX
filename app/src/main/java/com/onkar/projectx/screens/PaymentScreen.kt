@@ -55,7 +55,7 @@ fun PaymentScreen(navController: NavHostController, walletViewModel: WalletViewM
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 stickyHeader {
-                    TopViewBasic("Payment")
+                    TopViewBasic("Payment", navController)
                     AmountStickyHeader(amount)
                 }
 
@@ -73,15 +73,15 @@ fun AmountStickyHeader(amount: String) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp),
-        tonalElevation = 4.dp,
-        shadowElevation = 2.dp
+            .padding(16.dp)
     ) {
-        Text(
-            text = "Recharge Amount: ₹$amount",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onPrimary
-        )
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "Recharge Amount: ₹$amount",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 

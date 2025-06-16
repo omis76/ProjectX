@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.lifecycle.viewModelScope
+import com.onkar.projectx.ApiClient
 import com.onkar.projectx.data.PaymentMethod
 import com.onkar.projectx.data.PaymentType
 import kotlinx.coroutines.delay
@@ -30,7 +31,18 @@ class WalletViewModel : ViewModel() {
 
         isLoading = true
         viewModelScope.launch {
-            delay(1500) // Simulate API call
+            try {
+                val apiData = ApiClient.homeApi.getPaymentMethods()
+                if (apiData.isNotEmpty()) {
+                    _paymentTypes.addAll(apiData)
+                    isLoading = false
+                    return@launch
+                }
+            } catch (_: Exception) {
+                // ignore errors and fallback to demo data
+            }
+
+            delay(1500)
             _paymentTypes.addAll(
                 listOf(
                     PaymentType(
