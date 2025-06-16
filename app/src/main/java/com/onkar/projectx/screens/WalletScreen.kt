@@ -42,7 +42,10 @@ fun WalletScreen(navController: NavHostController, walletViewModel: WalletViewMo
         WalletView(modifier = Modifier.weight(1f), walletViewModel)
         Button(
             onClick = { navController.navigate(Screen.Payment.route) },
-            enabled = walletViewModel.amount.toDoubleOrNull()?.let { it > 0 } == true,
+            enabled = walletViewModel.amount
+                .toDoubleOrNull()
+                ?.let { it > 0 }
+                ?: false,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
