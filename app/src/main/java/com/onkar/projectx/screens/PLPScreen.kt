@@ -99,7 +99,7 @@ fun PLPScreen(
                         )
                     }
 
-                    SearchBarView()
+                    SearchBarView { navController.navigate(Screen.Search.route) }
                 }
 
                 Spacer(Modifier.height(16.dp))

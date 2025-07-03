@@ -589,7 +589,7 @@ fun PLPProductView(
 
 
 @Composable
-fun SearchBarView() {
+fun SearchBarView(onSearchClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -599,6 +599,7 @@ fun SearchBarView() {
             .border(
                 1.dp, color = Color.LightGray, shape = RoundedCornerShape(16.dp)
             )
+            .clickable { onSearchClick() }
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -24,6 +24,7 @@ import com.onkar.projectx.screens.LandingScreen
 import com.onkar.projectx.screens.MobileNumberScreen
 import com.onkar.projectx.screens.OTPScreen
 import com.onkar.projectx.screens.PLPScreen
+import com.onkar.projectx.screens.SearchScreen
 import com.onkar.projectx.screens.PaymentScreen
 import com.onkar.projectx.screens.ProductDetailScreen
 import com.onkar.projectx.screens.ProfileScreen
@@ -132,6 +133,14 @@ fun NavigationGraph(
             PLPScreen(
                 cartViewModel = cartViewModel,
                 navController = navController,
+                viewModel = productsViewModel
+            )
+        }
+
+        composable(Screen.Search.route) {
+            SearchScreen(
+                navController = navController,
+                cartViewModel = cartViewModel,
                 viewModel = productsViewModel
             )
         }

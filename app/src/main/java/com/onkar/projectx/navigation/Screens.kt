@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val icon: ImageVector, val title: String) {
@@ -15,6 +16,7 @@ sealed class Screen(val route: String, val icon: ImageVector, val title: String)
     object Reorder : Screen("reorder", Icons.Default.Call, "Reorder")
     object PLP : Screen("plp", Icons.Default.Home, "PLP")
     object Landing : Screen("landing", Icons.Default.Home, "Landing")
+    object Search : Screen("search", Icons.Default.Search, "Search")
 
 
     object ProductDetail : Screen("productDetail", Icons.Default.DateRange, "ProductDetail")
@@ -35,6 +37,7 @@ val hideBottomBarRoutes = listOf(
     Screen.OTP.route,
     Screen.ProductDetail.route,
     Screen.PLP.route,
+    Screen.Search.route,
     Screen.Landing.route
 )
 

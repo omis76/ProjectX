@@ -119,7 +119,7 @@ fun TopBanner(adjustedHeight: Dp, isLoading: Boolean = false) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SearchBarView()
+            SearchBarView { navController.navigate(Screen.Search.route) }
         }
     }
 }
