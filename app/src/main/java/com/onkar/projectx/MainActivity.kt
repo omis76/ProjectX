@@ -43,7 +43,6 @@ import com.onkar.projectx.ui.theme.greenTop
 import com.onkar.projectx.ui_components.BottomNavBar
 import com.onkar.projectx.ui_components.FloatingCartButton
 import com.onkar.projectx.viewmodels.AuthViewModel
-import com.onkar.projectx.viewmodels.AuthViewModelFactory
 import com.onkar.projectx.viewmodels.CartViewModel
 import com.onkar.projectx.viewmodels.ProductsViewModel
 import dagger.hilt.android.AndroidEntryPoint

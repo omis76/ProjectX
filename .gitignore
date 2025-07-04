@@ -1,0 +1,29 @@
+# Android Studio files
+.gradle/
+.idea/
+.kotlin/
+*.iml
+local.properties
+
+# Generated files
+build/
+*.apk
+*.ap_
+
+# Sensitive files - DO NOT COMMIT
+gradle.properties
+keystore.properties
+*.jks
+*.keystore
+
+# API Keys and secrets (if using separate files)
+secrets.properties
+api-keys.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Firebase
+google-services.json
+firebase-debug.log

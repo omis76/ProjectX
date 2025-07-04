@@ -22,12 +22,33 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            
+            buildConfigField("String", "BASE_URL", project.findProperty("DEV_BASE_URL") as String)
+            buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"${project.findProperty("GOOGLE_MAPS_API_KEY")}\"")
+            buildConfigField("boolean", "ALLOW_CLEARTEXT", "true")
+            
+            manifestPlaceholders["usesCleartextTraffic"] = true
+            manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as String
+        }
+        
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            buildConfigField("String", "BASE_URL", project.findProperty("PROD_BASE_URL") as String)
+            buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"${project.findProperty("GOOGLE_MAPS_API_KEY")}\"")
+            buildConfigField("boolean", "ALLOW_CLEARTEXT", "false")
+            
+            manifestPlaceholders["usesCleartextTraffic"] = false
+            manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as String
         }
     }
     compileOptions {
@@ -39,6 +60,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     kapt {
         correctErrorTypes = true
@@ -75,6 +97,11 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.google.code.gson:gson:2.8.8")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // Chucker for network debugging
+    debugImplementation(libs.chucker.debug)
+    releaseImplementation(libs.chucker.release)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

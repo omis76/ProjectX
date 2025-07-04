@@ -167,6 +167,9 @@ fun TopViewHome(navController: NavHostController, homeViewModel: HomeViewModel) 
                 modifier = Modifier
                     .size(60.dp)
                     .background(color = MaterialTheme.colorScheme.onSurface, shape = CircleShape)
+                    .clickable {
+                        navController.navigate(Screen.Profile.route)
+                    }
             )
             Spacer(modifier = Modifier.width(4.dp))
             Column {

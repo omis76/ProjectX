@@ -38,7 +38,8 @@ val hideBottomBarRoutes = listOf(
     Screen.ProductDetail.route,
     Screen.PLP.route,
     Screen.Search.route,
-    Screen.Landing.route
+    Screen.Landing.route,
+    Screen.Profile.route
 )
 
 val hideFloatingCartButtonRoutes = listOf(

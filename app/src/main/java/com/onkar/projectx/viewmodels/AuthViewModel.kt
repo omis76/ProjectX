@@ -5,22 +5,25 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.onkar.projectx.ApiClient
 import com.onkar.projectx.data.AuthState
-import com.onkar.projectx.data.DataStoreManager
+import com.onkar.projectx.data.Resource
 import com.onkar.projectx.navigation.Screen
+import com.onkar.projectx.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(private val dataStore: DataStoreManager) : ViewModel() {
-    var a = 0
+class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
+    
     private val _uiState = MutableStateFlow(AuthState())
     val uiState: StateFlow<AuthState> = _uiState
 
@@ -39,26 +42,26 @@ class AuthViewModel @Inject constructor(private val dataStore: DataStoreManager)
 
     suspend fun checkStartScreen() {
         val startScreen = when {
-            dataStore.isFirstLaunch() -> Screen.Splash
-            !dataStore.isLoggedIn() -> Screen.Login
+            authRepository.isFirstLaunch() -> Screen.Splash
+            !authRepository.isLoggedIn() -> Screen.Login
             else -> Screen.Home
         }
         _startScreen.value = startScreen
     }
 
     suspend fun isLoggedIn(): Boolean {
-        return dataStore.isLoggedIn()
+        return authRepository.isLoggedIn()
     }
 
     fun markFirstLaunchDone() {
         viewModelScope.launch {
-            dataStore.setFirstLaunch(false)
+            authRepository.markFirstLaunchCompleted()
         }
     }
 
     fun markLoggedIn() {
         viewModelScope.launch {
-            dataStore.setLoggedIn(true)
+            authRepository.markUserLoggedIn()
         }
     }
 
@@ -68,32 +71,25 @@ class AuthViewModel @Inject constructor(private val dataStore: DataStoreManager)
 
     fun sendOTP(onSuccess: () -> Unit) {
         val mobile = _uiState.value.mobile
-        if (mobile.length != 10) {
-            _uiState.value = _uiState.value.copy(mobileError = "Invalid number")
-            return
-        }
-
-        _uiState.value = _uiState.value.copy(isLoading = true)
-
+        
         viewModelScope.launch {
-            try {
-                val response = ApiClient.homeApi.requestOTP(mapOf("phone" to mobile))
-                if (response.error.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
-                    onSuccess()
-                } else {
-                    _uiState.value =
-                        _uiState.value.copy(
+            authRepository.sendOTP(mobile).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true, mobileError = null)
+                    }
+                    is Resource.Success -> {
+                        _uiState.value = _uiState.value.copy(isLoading = false, mobileError = null)
+                        startTimer() // Start OTP resend timer
+                        onSuccess()
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            mobileError = response.error
+                            mobileError = resource.message
                         )
+                    }
                 }
-            } catch (e: Exception) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        isLoading = false,
-                        mobileError = e.localizedMessage ?: "something went wrong"
-                    )
             }
         }
     }
@@ -103,33 +99,33 @@ class AuthViewModel @Inject constructor(private val dataStore: DataStoreManager)
     }
 
     fun verifyOtp(onSuccess: () -> Unit) {
-        _uiState.value = _uiState.value.copy(isLoading = true)
+        val mobile = _uiState.value.mobile
+        val otp = _uiState.value.otp
+        
         viewModelScope.launch {
-            try {
-                val response = ApiClient.homeApi.verifyOTP(
-                    mapOf(
-                        "phone" to _uiState.value.mobile,
-                        "otp" to _uiState.value.otp
-                    )
-                )
-                if (response.error.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
-                    dataStore.setToken(response.token)
-                    onSuccess()
-                } else {
-                    _uiState.value =
-                        _uiState.value.copy(
+            authRepository.verifyOTP(mobile, otp).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true, otpError = null)
+                    }
+                    is Resource.Success -> {
+                        _uiState.value = _uiState.value.copy(isLoading = false, otpError = null)
+                        onSuccess()
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            otpError = response.error
+                            otpError = resource.message
                         )
+                    }
                 }
-            } catch (e: Exception) {
-                _uiState.value =
-                    _uiState.value.copy(
-                        isLoading = false,
-                        otpError = e.localizedMessage ?: "something went wrong"
-                    )
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.logout()
         }
     }
 
@@ -148,6 +144,6 @@ class AuthViewModel @Inject constructor(private val dataStore: DataStoreManager)
     }
 
     suspend fun isFirstTime(): Boolean {
-        return dataStore.isFirstLaunch()
+        return authRepository.isFirstLaunch()
     }
 }

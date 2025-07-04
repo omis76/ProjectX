@@ -24,7 +24,6 @@ import com.onkar.projectx.viewmodels.AuthViewModel
 
 @Composable
 fun LandingScreen(navController: NavHostController, authViewModel: AuthViewModel) {
-    authViewModel.a = 100
     val startScreen by authViewModel.startScreen.collectAsState()
 
     LaunchedEffect(startScreen) {

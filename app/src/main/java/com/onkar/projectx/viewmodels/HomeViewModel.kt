@@ -2,19 +2,19 @@ package com.onkar.projectx.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.onkar.projectx.ApiClient
 import com.onkar.projectx.data.*
-import com.onkar.projectx.data.DataStoreManager.Companion.TOKEN
+import com.onkar.projectx.repository.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(private val dataStore: DataStoreManager) : ViewModel() {
-    var authToken = ""
+class HomeViewModel @Inject constructor(
+    private val homeRepository: HomeRepository
+) : ViewModel() {
 
     private val _homeUiState = MutableStateFlow(HomeDashboardUiState())
     val homeUiState: StateFlow<HomeDashboardUiState> = _homeUiState
@@ -22,47 +22,97 @@ class HomeViewModel @Inject constructor(private val dataStore: DataStoreManager)
     private val _userUiState = MutableStateFlow(UserDashboardUiState())
     val userUiState: StateFlow<UserDashboardUiState> = _userUiState
 
-    init {
-        viewModelScope.launch {
-            authToken = dataStore.getToken()
-        }
-    }
-
     fun fetchHomeDashboard() {
         viewModelScope.launch {
-            _homeUiState.value = _homeUiState.value.copy(isLoading = true, errorMessage = null)
-            try {
-                val response = ApiClient.homeApi.getHomeData(authToken)
-                _homeUiState.value = _homeUiState.value.copy(
-                    isLoading = false,
-                    banners = response.banners,
-                    sections = response.items
-                )
-            } catch (e: Exception) {
-                _homeUiState.value = _homeUiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to fetch home data: ${e.localizedMessage}"
-                )
+            homeRepository.getHomeDashboard().collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _homeUiState.value = _homeUiState.value.copy(
+                            isLoading = true,
+                            errorMessage = null,
+                            banners = resource.data?.banners ?: _homeUiState.value.banners,
+                            sections = resource.data?.items ?: _homeUiState.value.sections
+                        )
+                    }
+                    is Resource.Success -> {
+                        _homeUiState.value = _homeUiState.value.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            banners = resource.data?.banners ?: emptyList(),
+                            sections = resource.data?.items ?: emptyList()
+                        )
+                    }
+                    is Resource.Error -> {
+                        _homeUiState.value = _homeUiState.value.copy(
+                            isLoading = false,
+                            errorMessage = resource.message,
+                            banners = resource.data?.banners ?: _homeUiState.value.banners,
+                            sections = resource.data?.items ?: _homeUiState.value.sections
+                        )
+                    }
+                }
             }
         }
     }
 
     fun fetchUserDashboard() {
         viewModelScope.launch {
-            _userUiState.value = _userUiState.value.copy(isLoading = true, errorMessage = null)
-            try {
-                val response = ApiClient.homeApi.getUserDashboard(authToken)
-                _userUiState.value = _userUiState.value.copy(
-                    isLoading = false,
-                    addressLine = response.address_line1,
-                    fullAddress = response.address_full,
-                    walletBalance = response.wallet_balance
-                )
-            } catch (e: Exception) {
-                _userUiState.value = _userUiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to fetch user data: ${e.localizedMessage}"
-                )
+            homeRepository.getUserDashboard().collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _userUiState.value = _userUiState.value.copy(
+                            isLoading = true,
+                            errorMessage = null,
+                            addressLine = resource.data?.address_line1 ?: _userUiState.value.addressLine,
+                            fullAddress = resource.data?.address_full ?: _userUiState.value.fullAddress,
+                            walletBalance = resource.data?.wallet_balance ?: _userUiState.value.walletBalance
+                        )
+                    }
+                    is Resource.Success -> {
+                        _userUiState.value = _userUiState.value.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            addressLine = resource.data?.address_line1 ?: "",
+                            fullAddress = resource.data?.address_full ?: "",
+                            walletBalance = resource.data?.wallet_balance ?: ""
+                        )
+                    }
+                    is Resource.Error -> {
+                        _userUiState.value = _userUiState.value.copy(
+                            isLoading = false,
+                            errorMessage = resource.message,
+                            addressLine = resource.data?.address_line1 ?: _userUiState.value.addressLine,
+                            fullAddress = resource.data?.address_full ?: _userUiState.value.fullAddress,
+                            walletBalance = resource.data?.wallet_balance ?: _userUiState.value.walletBalance
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun refreshHomeDashboard() {
+        viewModelScope.launch {
+            homeRepository.refreshHomeDashboard().collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _homeUiState.value = _homeUiState.value.copy(isLoading = true, errorMessage = null)
+                    }
+                    is Resource.Success -> {
+                        _homeUiState.value = _homeUiState.value.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            banners = resource.data?.banners ?: emptyList(),
+                            sections = resource.data?.items ?: emptyList()
+                        )
+                    }
+                    is Resource.Error -> {
+                        _homeUiState.value = _homeUiState.value.copy(
+                            isLoading = false,
+                            errorMessage = resource.message
+                        )
+                    }
+                }
             }
         }
     }
