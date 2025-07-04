@@ -36,7 +36,7 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsState()
     var query by remember { mutableStateOf("") }
 
-    val products = if (query.isBlank()) uiState.products else viewModel.searchProductsByName(query)
+    val products = if (query.isBlank()) uiState.products else viewModel.searchProducts(query)
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
