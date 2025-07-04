@@ -38,6 +38,7 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.onkar.projectx.data.Product
 import com.onkar.projectx.data.SubcategoryModel
+import com.onkar.projectx.navigation.Screen
 import com.onkar.projectx.ui.theme.TextStyleSmallNormalGray
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldBlack
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldGray

@@ -31,6 +31,7 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.onkar.projectx.FloatingCartButtonWrapper
 import com.onkar.projectx.data.DataStoreManager
 import com.onkar.projectx.navigation.NavigationGraph
+import com.onkar.projectx.navigation.Screen
 import com.onkar.projectx.ui.theme.greenTop
 import com.onkar.projectx.ui_components.BannerItemSkeleton
 import com.onkar.projectx.ui_components.BannerItemView
@@ -91,7 +92,7 @@ fun HomeViews(
 
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
         stickyHeader { TopViewHome(navController, homeViewModel) }
-        item { TopBanner(adjustedHeight = 200.dp) }
+        item { TopBanner(adjustedHeight = 200.dp, navController) }
 
         items(uiState.sections, key = { it.title }) { banner ->
             if (uiState.isLoading) {
@@ -109,7 +110,7 @@ fun HomeViews(
 }
 
 @Composable
-fun TopBanner(adjustedHeight: Dp, isLoading: Boolean = false) {
+fun TopBanner(adjustedHeight: Dp, navController: NavHostController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
