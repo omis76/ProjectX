@@ -100,6 +100,57 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
         return productList.filter { it.name.contains(query, ignoreCase = true) }
     }
 
+    fun searchProducts(query: String): List<Product> {
+        val normalizedQuery = query.trim().lowercase()
+        if (normalizedQuery.isBlank()) return productList
+
+        val subcategoryMap = categoryList
+            .flatMap { cat ->
+                cat.subcategories.map { it.id to it.name }
+            }
+            .toMap()
+        return productList.filter { product ->
+            val productName = product.name.lowercase()
+            val subcategoryName = subcategoryMap[product.subcategoryId]?.lowercase() ?: ""
+            val categoryName = categoryList.firstOrNull { cat ->
+                cat.subcategories.any { it.id == product.subcategoryId }
+            }?.name?.lowercase() ?: ""
+
+            fuzzyMatch(productName, normalizedQuery) ||
+                fuzzyMatch(subcategoryName, normalizedQuery) ||
+                fuzzyMatch(categoryName, normalizedQuery)
+        }
+    }
+
+    private fun fuzzyMatch(text: String, query: String): Boolean {
+        if (text.contains(query)) return true
+        val distance = levenshtein(text, query)
+        return distance <= 2
+    }
+
+    private fun levenshtein(lhs: String, rhs: String): Int {
+        val m = lhs.length
+        val n = rhs.length
+        if (m == 0) return n
+        if (n == 0) return m
+        val dp = Array(m + 1) { IntArray(n + 1) }
+        for (i in 0..m) dp[i][0] = i
+        for (j in 0..n) dp[0][j] = j
+        for (i in 1..m) {
+            val c1 = lhs[i - 1]
+            for (j in 1..n) {
+                val c2 = rhs[j - 1]
+                val cost = if (c1 == c2) 0 else 1
+                dp[i][j] = minOf(
+                    dp[i - 1][j] + 1,
+                    dp[i][j - 1] + 1,
+                    dp[i - 1][j - 1] + cost
+                )
+            }
+        }
+        return dp[m][n]
+    }
+
     fun getRecommendedProducts(count: Int = 5): List<Product> {
         return productList.shuffled().take(count)
     }
