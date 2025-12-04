@@ -27,3 +27,25 @@ fun mergeTodayDeliveriesWithCart(
 
     return deliveries + extraCartDeliveries
 }
+
+fun mergeDeliveriesWithCartForDate(
+    deliveries: List<DeliveryItem>,
+    cartProducts: List<Product>,
+    selectedDate: String
+): List<DeliveryItem> {
+    // Add cart items as pseudo-deliveries if not already scheduled
+    val deliveryProductIds = deliveries.map { it.product }.toSet()
+    val extraCartDeliveries = cartProducts
+        .filter { it.id.toIntOrNull() != null && !deliveryProductIds.contains(it.id) }
+        .map {
+            DeliveryItem(
+                subscription = -1,
+                product = it.id,
+                quantity = it.quantity ?: 1,
+                status = "in_cart",
+                delivery_date = selectedDate
+            )
+        }
+
+    return deliveries + extraCartDeliveries
+}

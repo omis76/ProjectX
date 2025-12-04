@@ -1,6 +1,7 @@
 package com.onkar.projectx.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import com.onkar.projectx.data.CalendarDay
 import com.onkar.projectx.data.DeliveryItem
 import com.onkar.projectx.data.Product
 import com.onkar.projectx.mergeTodayDeliveriesWithCart
+import com.onkar.projectx.mergeDeliveriesWithCartForDate
 import com.onkar.projectx.ui.theme.TextStyleSmallBoldBlack
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldBlack
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldRed
@@ -92,11 +94,26 @@ fun CalendarScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         val isTomorrow = calendarUiState.selectedDate == LocalDate.now().plusDays(1)
-        val deliveriesToShow = mergeTodayDeliveriesWithCart(
-            deliveries = calendarUiState.dayDeliveries,
-            cartProducts = cartViewModel.getCartProductsWithQuantity(),
-            isTomorrow = isTomorrow
-        )
+        val selectedDateString = calendarUiState.selectedDate.toString()
+        
+        // Get cart products for the selected date
+        val cartProductsForDate = cartViewModel.getCartProductsForDate(selectedDateString)
+        
+        val deliveriesToShow = if (isTomorrow) {
+            // For tomorrow, use legacy logic to maintain backward compatibility
+            mergeTodayDeliveriesWithCart(
+                deliveries = calendarUiState.dayDeliveries,
+                cartProducts = cartViewModel.getCartProductsWithQuantity(),
+                isTomorrow = isTomorrow
+            )
+        } else {
+            // For other dates, use the new logic with date-specific cart
+            mergeDeliveriesWithCartForDate(
+                deliveries = calendarUiState.dayDeliveries,
+                cartProducts = cartProductsForDate,
+                selectedDate = selectedDateString
+            )
+        }
 
         LaunchedEffect(key1 = deliveriesToShow, key2 = productsViewModel.uiState.value.products) {
             cartViewModel.preloadDeliveryQuantities(
@@ -120,6 +137,10 @@ fun CalendarScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .background(color = Color.White, shape = RoundedCornerShape(16.dp))
+                .clickable {
+                    // Navigate to CalendarProductListScreen with selected date
+                    navController.navigate("calendarProductList/${calendarUiState.selectedDate}")
+                }
                 .padding(16.dp),
             horizontalArrangement = Arrangement.Center
         ) {
@@ -199,7 +220,14 @@ fun DeliverySection(
                     val productWithQty = product.copy(quantity = delivery.quantity)
                     WideProductView(productWithQty, cartViewModel, productsViewModel)
                     Spacer(modifier = Modifier.height(6.dp))
-                    if (index < deliveries.size - 1) DividerSlice()
+                    if (index < deliveries.size - 1) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                    }
                 } else {
                     Text(
                         "Product ${delivery.product} not found",

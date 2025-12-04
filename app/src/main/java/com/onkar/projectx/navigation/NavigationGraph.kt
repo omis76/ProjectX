@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.onkar.projectx.screens.CalendarScreen
+import com.onkar.projectx.screens.CalendarProductListScreen
 import com.onkar.projectx.screens.CategoryScreen
 import com.onkar.projectx.screens.HomeScreen
 import com.onkar.projectx.screens.LandingScreen
@@ -142,6 +143,19 @@ fun NavigationGraph(
                 navController = navController,
                 cartViewModel = cartViewModel,
                 viewModel = productsViewModel
+            )
+        }
+
+        composable(
+            route = "calendarProductList/{selectedDate}",
+            arguments = listOf(navArgument("selectedDate") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val selectedDate = backStackEntry.arguments?.getString("selectedDate") ?: return@composable
+            CalendarProductListScreen(
+                navController = navController,
+                cartViewModel = cartViewModel,
+                productsViewModel = productsViewModel,
+                selectedDate = selectedDate
             )
         }
 

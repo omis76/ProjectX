@@ -17,6 +17,7 @@ sealed class Screen(val route: String, val icon: ImageVector, val title: String)
     object PLP : Screen("plp", Icons.Default.Home, "PLP")
     object Landing : Screen("landing", Icons.Default.Home, "Landing")
     object Search : Screen("search", Icons.Default.Search, "Search")
+    object CalendarProductList : Screen("calendarProductList", Icons.Default.DateRange, "CalendarProductList")
 
 
     object ProductDetail : Screen("productDetail", Icons.Default.DateRange, "ProductDetail")
@@ -39,7 +40,8 @@ val hideBottomBarRoutes = listOf(
     Screen.PLP.route,
     Screen.Search.route,
     Screen.Landing.route,
-    Screen.Profile.route
+    Screen.Profile.route,
+    Screen.CalendarProductList.route
 )
 
 val hideFloatingCartButtonRoutes = listOf(
