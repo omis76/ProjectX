@@ -71,13 +71,15 @@ class AuthRepositoryImpl @Inject constructor(
             )
             
             // Check if response has error
-            if (response.error.isNullOrEmpty()) {
+            if (!response.error && response.accessToken != null) {
                 // Save token on successful verification
-                saveAuthToken(response.token)
+                // Format the token as "Bearer {access_token}" for API calls
+                val bearerToken = "${response.tokenType ?: "bearer"} ${response.accessToken}"
+                saveAuthToken(bearerToken)
                 markUserLoggedIn()
                 emit(Resource.Success(response))
             } else {
-                emit(Resource.Error(response.error))
+                emit(Resource.Error(response.message ?: "Failed to verify OTP"))
             }
             
         } catch (e: IOException) {

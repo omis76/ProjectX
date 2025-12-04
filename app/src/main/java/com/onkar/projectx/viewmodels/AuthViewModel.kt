@@ -130,7 +130,27 @@ class AuthViewModel @Inject constructor(
     }
 
     fun resendOtp() {
-        startTimer()
+        val mobile = _uiState.value.mobile
+        
+        viewModelScope.launch {
+            authRepository.sendOTP(mobile).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true, otpError = null)
+                    }
+                    is Resource.Success -> {
+                        _uiState.value = _uiState.value.copy(isLoading = false, otpError = null)
+                        startTimer() // Start OTP resend timer after successful resend
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            otpError = resource.message
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private fun startTimer() {

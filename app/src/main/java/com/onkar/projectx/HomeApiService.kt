@@ -33,7 +33,7 @@ interface HomeApiService {
         @Body request: Map<String, String>
     ): BasicResponse
 
-    @POST("api/customer/verify-otp/")
+    @POST("api/v1/auth/verify-otp/")
     suspend fun verifyOTP(
         @Body request: Map<String, String>
     ): TokenResponse
