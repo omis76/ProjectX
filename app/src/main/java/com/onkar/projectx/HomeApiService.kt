@@ -28,7 +28,7 @@ interface HomeApiService {
         @Header("Authorization") token: String
     ): UserDashboardResponse
 
-    @POST("api/customer/send-otp/")
+    @POST("api/v1/auth/send-otp/")
     suspend fun requestOTP(
         @Body request: Map<String, String>
     ): BasicResponse

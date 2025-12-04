@@ -53,11 +53,19 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideHeaderInterceptor(): HeaderInterceptor {
+        return HeaderInterceptor()
+    }
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
+        headerInterceptor: HeaderInterceptor,
         chuckerInterceptor: ChuckerInterceptor,
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(headerInterceptor)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(chuckerInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)

@@ -36,10 +36,10 @@ class AuthRepositoryImpl @Inject constructor(
             val response = apiService.requestOTP(mapOf("phone" to phoneNumber))
             
             // Check if response has error
-            if (response.error.isNullOrEmpty()) {
+            if (!response.error) {
                 emit(Resource.Success(response))
             } else {
-                emit(Resource.Error(response.error))
+                emit(Resource.Error(response.message))
             }
             
         } catch (e: IOException) {

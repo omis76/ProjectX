@@ -2,7 +2,7 @@ package com.onkar.projectx.data
 
 data class BasicResponse(
     val message: String,
-    val error: String?
+    val error: Boolean
 )
 
 data class TokenResponse(
