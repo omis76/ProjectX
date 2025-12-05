@@ -38,7 +38,7 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     }
 
     suspend fun getToken(): String {
-        return "Token ${dataStore.data.first()[TOKEN]}"
+        return "${dataStore.data.first()[TOKEN]}"
     }
 
     suspend fun setToken(value: String) {

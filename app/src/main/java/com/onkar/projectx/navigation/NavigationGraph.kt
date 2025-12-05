@@ -94,7 +94,8 @@ fun NavigationGraph(
         composable(Screen.Category.route) {
             CategoryScreen(
                 navController,
-                viewModel = productsViewModel
+                viewModel = productsViewModel,
+                cartViewModel = cartViewModel
             )
         }
 

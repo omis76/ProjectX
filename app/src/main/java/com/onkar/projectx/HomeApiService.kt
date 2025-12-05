@@ -38,9 +38,10 @@ interface HomeApiService {
         @Body request: Map<String, String>
     ): TokenResponse
 
-    @GET("api/catalog/")
+    @GET("api/v1/catalog/")
     suspend fun getCatalog(
-        @Header("Authorization") token: String
+        @Header("Authorization") token: String,
+        @Query("city_id") cityId: Int = 1 // Default to city_id=1
     ): CatalogResponse
 
     @GET("api/orders/my-deliveries/")

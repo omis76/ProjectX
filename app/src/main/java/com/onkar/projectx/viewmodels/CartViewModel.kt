@@ -73,12 +73,12 @@ class CartViewModel : ViewModel() {
         val items = _cartItems.value.values
 
         val mrpTotal = items.sumOf {
-            val mrp = it.mrp
+            val mrp = it.mrp.toDouble()
             mrp * (it.quantity ?: 1)
         }
 
         val sellingTotal = items.sumOf {
-            (it.sellingPrice ?: 0.0) * (it.quantity ?: 1)
+            (it.sellingPrice.toDouble() ?: 0.0) * (it.quantity ?: 1)
         }
 
         val baseAmount = sellingTotal
@@ -257,12 +257,12 @@ class CartViewModel : ViewModel() {
         val items = getCartItemsForDate(deliveryDate).values
         
         val mrpTotal = items.sumOf { cartItem ->
-            val mrp = cartItem.product.mrp
+            val mrp = cartItem.product.mrp.toDouble()
             mrp * cartItem.quantity
         }
         
         val sellingTotal = items.sumOf { cartItem ->
-            (cartItem.product.sellingPrice ?: 0.0) * cartItem.quantity
+            (cartItem.product.sellingPrice.toDouble() ?: 0.0) * cartItem.quantity
         }
         
         val baseAmount = sellingTotal

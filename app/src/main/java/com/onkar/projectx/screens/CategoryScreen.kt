@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,11 +39,17 @@ import com.onkar.projectx.data.SubcategoryModel
 import com.onkar.projectx.navigation.Screen
 import com.onkar.projectx.ui.theme.TextStyleSmallNormalGray
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldBlack
+import com.onkar.projectx.viewmodels.CartViewModel
 import com.onkar.projectx.viewmodels.ProductsViewModel
 
 @Composable
-fun CategoryScreen(navController: NavHostController, viewModel: ProductsViewModel) {
+fun CategoryScreen(navController: NavHostController, viewModel: ProductsViewModel, cartViewModel: CartViewModel) {
     val uiState = viewModel.uiState.collectAsState().value
+
+    // Fetch catalog data when the screen opens
+    LaunchedEffect(Unit) {
+        viewModel.getCatalog(cartViewModel)
+    }
 
     // Show loading spinner while data is being fetched
     if (uiState.isLoading) {
@@ -78,7 +85,7 @@ fun CategoryItem(
         // Category title and subtitle
         Text(text = category.name, style = TextStyleSmallSemiBoldBlack)
         Text(
-            text = category.description,
+            text = category.description ?: "",
             style = TextStyleSmallNormalGray,
             color = Color.Gray
         )

@@ -55,7 +55,7 @@ fun CalendarProductListScreen(
         } else {
             productsUiState.products.filter { product ->
                 product.name.contains(searchQuery, ignoreCase = true) ||
-                product.description.contains(searchQuery, ignoreCase = true)
+                (product.description ?: "").contains(searchQuery, ignoreCase = true)
             }
         }
     }

@@ -36,6 +36,7 @@ import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.onkar.projectx.data.DataStoreManager
 import com.onkar.projectx.navigation.NavigationGraph
+import com.onkar.projectx.navigation.Screen
 import com.onkar.projectx.navigation.hideBottomBarRoutes
 import com.onkar.projectx.navigation.hideFloatingCartButtonRoutes
 import com.onkar.projectx.ui.theme.ProjectXTheme
@@ -125,7 +126,7 @@ fun FloatingCartButtonWrapper(
     if (cartItems.isNotEmpty()) {
         FloatingCartButton(
             cartItemCount = cartItems.size,
-            onClick = { /* navController.navigate(Screen.Cart.route) */ },
+            onClick = { navController.navigate(Screen.Calendar.route) },
             modifier = modifier
                 .padding(bottom = 72.dp)
         )

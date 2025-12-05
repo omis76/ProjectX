@@ -2,24 +2,27 @@ package com.onkar.projectx.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.onkar.projectx.ApiClient
+import com.onkar.projectx.HomeApiService
 import com.onkar.projectx.data.CategoryModel
 import com.onkar.projectx.data.DataStoreManager
 import com.onkar.projectx.data.Product
 import com.onkar.projectx.data.SubcategoryModel
-import com.onkar.projectx.data.generateFakeCategoriesAndProducts
+// import com.onkar.projectx.data.generateFakeCategoriesAndProducts
 import com.onkar.projectx.di.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import android.util.Log
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
 @HiltViewModel
-class ProductsViewModel @Inject constructor(private val dataStoreManager: DataStoreManager) :
-    ViewModel() {
+class ProductsViewModel @Inject constructor(
+    private val dataStoreManager: DataStoreManager,
+    private val homeApiService: HomeApiService
+) : ViewModel() {
     private val _plpUiState = MutableStateFlow(PLPUiState())
     val plpUiState: StateFlow<PLPUiState> = _plpUiState
 
@@ -31,49 +34,80 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
 
 
     fun getCatalog(cartViewModel: CartViewModel) {
+        Log.d("ProductsViewModel", "getCatalog called")
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             val token = dataStoreManager.getToken()
-            if (token.isEmpty() || token.equals("Token")) {
+            Log.d(
+                "ProductsViewModel",
+                "Token retrieved: ${token.take(20)}..."
+            ) // Log first 20 chars for security
 
-            } else {
-                try {
-                    val response = ApiClient.homeApi.getCatalog(token)
-                    if (response.error.isNullOrEmpty()) {
-                        productList = response.products
-                        categoryList = response.categories
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            products = response.products,
-                            categories = response.categories, error = null
-                        )
+            // Check if token is valid (should be in "Bearer {token}" format)
 
-                        cartViewModel.syncTomorrowDeliveries(
-                            token = token,
-                            products = response.products,
-                            fetchDeliveries = OrderRepository::getDeliveriesForDate
-                        )
-                    } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false, error = response.error
-                        )
+            try {
+                Log.d("ProductsViewModel", "Making API call to get catalog")
+                val response = homeApiService.getCatalog(token, cityId = 1)
+                Log.d(
+                    "ProductsViewModel",
+                    "API response received: ${response.categories.size} categories"
+                )
+                if (response.error.isNullOrEmpty()) {
+                    // Transform nested products structure to flat list
+                    val flatProductList = mutableListOf<Product>()
+                    response.categories.forEach { category ->
+                        category.subcategories.forEach { subcategory ->
+                            subcategory.products.forEach { product ->
+                                // Set the subcategoryId for each product
+                                product.subcategoryId = subcategory.id.toIntOrNull()
+                                flatProductList.add(product)
+                            }
+                        }
                     }
 
-                } catch (e: Exception) {
+                    productList = flatProductList
+                    categoryList = response.categories
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false, error = e.localizedMessage ?: "something went wrong"
+                        isLoading = false,
+                        products = flatProductList,
+                        categories = response.categories, error = null
+                    )
+
+                    cartViewModel.syncTomorrowDeliveries(
+                        token = token,
+                        products = flatProductList,
+                        fetchDeliveries = OrderRepository::getDeliveriesForDate
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false, error = response.error
                     )
                 }
+
+            } catch (e: Exception) {
+                Log.e("ProductsViewModel", "Error fetching catalog", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false, error = e.localizedMessage ?: "something went wrong"
+                )
             }
+
         }
     }
 
+    fun getProductById(productId: Int): Product? {
+        return productList.find { it.id == productId.toString() }
+    }
+
     fun getProductById(productId: String): Product? {
-        return productList.find { it.id == productId }
+        return productList.find { it.id.toString() == productId }
+    }
+
+    fun getProductsBySubcategory(subcategoryId: Int): List<Product> {
+        return productList.filter { it.subcategoryId == subcategoryId }
     }
 
     fun getProductsBySubcategory(subcategoryId: String): List<Product> {
-        return productList.filter { it.subcategoryId == subcategoryId }
+        return productList.filter { it.subcategoryId?.toString() == subcategoryId }
     }
 
     fun getAllSubcategories(): List<SubcategoryModel> {
@@ -86,14 +120,24 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
 
     // Additional Methods for Future Use
 
-    fun getProductsByCategory(categoryId: String): List<Product> {
+    fun getProductsByCategory(categoryId: Int): List<Product> {
         val subcategoryIds = categoryList
-            .find { it.id == categoryId }
+            .find { it.id == categoryId.toString() }
             ?.subcategories
             ?.map { it.id }
             ?: emptyList()
 
-        return productList.filter { it.subcategoryId in subcategoryIds }
+        return productList.filter { it.subcategoryId.toString() in subcategoryIds }
+    }
+
+    fun getProductsByCategory(categoryId: String): List<Product> {
+        val subcategoryIds = categoryList
+            .find { it.id.toString() == categoryId }
+            ?.subcategories
+            ?.map { it.id }
+            ?: emptyList()
+
+        return productList.filter { it.subcategoryId.toString() in subcategoryIds }
     }
 
     fun searchProductsByName(query: String): List<Product> {
@@ -111,14 +155,15 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
             .toMap()
         return productList.filter { product ->
             val productName = product.name.lowercase()
-            val subcategoryName = subcategoryMap[product.subcategoryId]?.lowercase() ?: ""
+            val subcategoryName =
+                subcategoryMap[product.subcategoryId.toString()]?.lowercase() ?: ""
             val categoryName = categoryList.firstOrNull { cat ->
-                cat.subcategories.any { it.id == product.subcategoryId }
+                cat.subcategories.any { it.id == product.subcategoryId.toString() }
             }?.name?.lowercase() ?: ""
 
             fuzzyMatch(productName, normalizedQuery) ||
-                fuzzyMatch(subcategoryName, normalizedQuery) ||
-                fuzzyMatch(categoryName, normalizedQuery)
+                    fuzzyMatch(subcategoryName, normalizedQuery) ||
+                    fuzzyMatch(categoryName, normalizedQuery)
         }
     }
 
@@ -155,8 +200,8 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
         return productList.shuffled().take(count)
     }
 
-    fun loadPLPByCategory(categoryId: String) {
-        val category = categoryList.find { it.id == categoryId } ?: return
+    fun loadPLPByCategory(categoryId: Int) {
+        val category = categoryList.find { it.id == categoryId.toString() } ?: return
         val subcategories = category.subcategories
         val firstSubcategory = subcategories.firstOrNull()
         val products = firstSubcategory?.let { getProductsBySubcategory(it.id) } ?: emptyList()
@@ -169,14 +214,43 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
         )
     }
 
-    fun loadPLPBySubcategory(subcategoryId: String) {
+    fun loadPLPByCategory(categoryId: String) {
+        val category = categoryList.find { it.id.toString() == categoryId } ?: return
+        val subcategories = category.subcategories
+        val firstSubcategory = subcategories.firstOrNull()
+
+        _plpUiState.value = PLPUiState(
+            category = category,
+            selectedSubcategory = firstSubcategory,
+            subcategories = subcategories,
+            products = productList
+        )
+    }
+
+    fun loadPLPBySubcategory(subcategoryId: Int) {
         val parentCategory = categoryList.find { cat ->
-            cat.subcategories.any { it.id == subcategoryId }
+            cat.subcategories.any { it.id == subcategoryId.toString() }
         } ?: return
 
         val subcategories = parentCategory.subcategories
-        val selectedSubcategory = subcategories.find { it.id == subcategoryId }
-        val products = getProductsBySubcategory(subcategoryId)
+        val selectedSubcategory = subcategories.find { it.id == subcategoryId.toString() }
+
+        _plpUiState.value = PLPUiState(
+            category = parentCategory,
+            selectedSubcategory = selectedSubcategory,
+            subcategories = subcategories,
+            products = productList
+        )
+    }
+
+    fun loadPLPBySubcategory(subcategoryId: String) {
+        val subcategoryIdInt = subcategoryId.toIntOrNull()
+        val parentCategory = categoryList.find { cat ->
+            cat.subcategories.any { it.id.toString() == subcategoryId }
+        } ?: return
+
+        val subcategories = parentCategory.subcategories
+        val selectedSubcategory = subcategories.find { it.id.toString() == subcategoryId }
 
         _plpUiState.value = PLPUiState(
             category = parentCategory,
@@ -187,7 +261,6 @@ class ProductsViewModel @Inject constructor(private val dataStoreManager: DataSt
     }
 
     fun onSubcategorySelected(subcategory: SubcategoryModel) {
-        val products = getProductsBySubcategory(subcategory.id)
         _plpUiState.value = _plpUiState.value.copy(
             selectedSubcategory = subcategory,
             products = productList

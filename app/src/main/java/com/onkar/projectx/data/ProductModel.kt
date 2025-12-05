@@ -1,41 +1,59 @@
 package com.onkar.projectx.data
 
+import com.google.gson.annotations.SerializedName
 
 data class CatalogResponse(
+    @SerializedName("city_id")
+    val cityId: Int? = null, // Ignored, just for parsing
+    @SerializedName("city_name")
+    val cityName: String? = null, // Ignored, just for parsing
     val categories: List<CategoryModel>,
-    val products: List<Product>,
-    val error: String?
+    val error: String? = null
 )
 
 data class CategoryModel(
     val id: String,
     val name: String,
-    val description: String,
+    val image: String? = null,
+    val description: String? = null, // Made optional since new API doesn't have it
     val subcategories: List<SubcategoryModel>
 )
 
 data class SubcategoryModel(
     val id: String,
     val name: String,
-    val description: String,
-    val image: String // URL or path to the subcategory image
+    val image: String,
+    val description: String? = null, // Made optional since new API doesn't have it
+    val products: List<Product> = emptyList() // New: products are now nested here
 )
 
 data class Product(
     val id: String,
-    val subcategoryId: String,
-    val image: String, // URL or path to the product image
-    val name: String, // Name of the product
-    val unitSize: String, // The size of the unit (e.g., "500g", "1L")
-    val unitType: String, // The type of unit (e.g., "kg", "ltr")
-    val unitText: String, // Text that explains the unit (optional)
-    val mrp: Double, // MRP of the product
-    val sellingPrice: Double, // Selling price of the product
-    val offerPrice: Double, // Offer price of the product (if any)
-    val deliveryText: String, // Delivery-related text (e.g., "Delivered in 2-3 days")
-    val reasons: List<Reason>, // List of reasons (strings and images)
-    val description: String, // Product description
-    val offer: Offer?, // Offer details (offer text, percentage, and price)
+    var subcategoryId: Int? = null, // Will be set during transformation
+    val image: String,
+    val name: String,
+    @SerializedName("unit_size")
+    val unitSize: String,
+    @SerializedName("unit_type")
+    val unitType: String,
+    @SerializedName("unit_text")
+    val unitText: String,
+    @SerializedName("delivery_text")
+    val deliveryText: String,
+    val mrp: Double, // Changed to String to match API response
+    @SerializedName("selling_price")
+    val sellingPrice: Double, // Changed to String to match API response
+    @SerializedName("max_order")
+    val maxOrder: Int? = null,
+    @SerializedName("top_label_text")
+    val topLabelText: String? = null,
+    @SerializedName("bottom_label_text")
+    val bottomLabelText: String? = null,
+    // Legacy fields for compatibility
+    val offerPrice: Double? = null,
+    val reasons: List<Reason>? = emptyList(),
+    val description: String? = null,
+    val offer: Offer? = null,
     var quantity: Int = 0
 )
 
@@ -51,6 +69,12 @@ data class Offer(
     val offerPrice: Double // Discounted price after applying the offer
 )
 
+// Helper extensions to convert String prices to Double for calculations
+fun Product.getMrpAsDouble(): Double = mrp
+fun Product.getSellingPriceAsDouble(): Double = sellingPrice
+
+// Commented out test data generation - needs update for new data model
+/*
 fun generateFakeCategoriesAndProducts(): Pair<List<CategoryModel>, List<Product>> {
     val reasons = listOf(
         Reason("Fresh from farm", "https://picsum.photos/200"),
@@ -68,38 +92,38 @@ fun generateFakeCategoriesAndProducts(): Pair<List<CategoryModel>, List<Product>
 
     val meatSubcategories = listOf(
         SubcategoryModel(
-            "subcat_meat_1",
+            1,
             "Chicken",
-            "Fresh chicken cuts",
-            "https://picsum.photos/200"
+            "https://picsum.photos/200",
+            "Fresh chicken cuts"
         ),
         SubcategoryModel(
-            "subcat_meat_2",
+            2,
             "Mutton",
-            "Tender mutton meat",
-            "https://picsum.photos/200"
+            "https://picsum.photos/200",
+            "Tender mutton meat"
         ),
         SubcategoryModel(
-            "subcat_meat_3",
+            3,
             "Pork",
-            "Juicy pork selections",
-            "https://picsum.photos/200"
+            "https://picsum.photos/200",
+            "Juicy pork selections"
         ),
-        SubcategoryModel("subcat_meat_4", "Beef", "Premium beef cuts", "https://picsum.photos/200"),
+        SubcategoryModel(4, "Beef", "https://picsum.photos/200", "Premium beef cuts"),
         SubcategoryModel(
-            "subcat_meat_5",
+            5,
             "Turkey",
-            "Delicious turkey options",
-            "https://picsum.photos/200"
+            "https://picsum.photos/200",
+            "Delicious turkey options"
         ),
         SubcategoryModel(
-            "subcat_meat_6",
+            6,
             "Duck",
-            "Farm-raised duck meat",
-            "https://picsum.photos/200"
+            "https://picsum.photos/200",
+            "Farm-raised duck meat"
         ),
-        SubcategoryModel("subcat_meat_7", "Goat", "Fresh goat meat", "https://picsum.photos/200"),
-        SubcategoryModel("subcat_meat_8", "Rabbit", "Lean rabbit meat", "https://picsum.photos/200")
+        SubcategoryModel(7, "Goat", "https://picsum.photos/200", "Fresh goat meat"),
+        SubcategoryModel(8, "Rabbit", "https://picsum.photos/200", "Lean rabbit meat")
     )
 
     val dairySubcategories = listOf(
@@ -268,3 +292,4 @@ fun generateFakeCategoriesAndProducts(): Pair<List<CategoryModel>, List<Product>
 
     return Pair(categories, products)
 }
+*/
