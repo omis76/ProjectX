@@ -126,7 +126,13 @@ fun FloatingCartButtonWrapper(
     if (cartItems.isNotEmpty()) {
         FloatingCartButton(
             cartItemCount = cartItems.size,
-            onClick = { navController.navigate(Screen.Calendar.route) },
+            onClick = { 
+                navController.navigate(Screen.Calendar.route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
             modifier = modifier
                 .padding(bottom = 72.dp)
         )

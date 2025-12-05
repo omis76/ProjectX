@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.onkar.projectx.ApiClient
 import com.onkar.projectx.data.Product
 import com.onkar.projectx.data.SubscriptionRequest
@@ -121,17 +122,28 @@ fun ProductDetailScreen(
                             .background(Color.LightGray),
                         contentAlignment = Alignment.Center
                     ) {
+                        // Load product image
+                        AsyncImage(
+                            model = product.image,
+                            contentDescription = product.name,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        // Close button - overlaid on top
                         Icon(
                             Icons.Default.AddCircle,
                             contentDescription = "Close",
+                            tint = Color.White,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(top = 16.dp, end = 16.dp)
                                 .size(42.dp)
                                 .rotate(45f)
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(21.dp)
+                                )
+                                .clickable { navController.popBackStack() }
                         )
-                        // Load your image here
-                        Text("Image Here", color = BlackAndWhiteColorScheme.onBackground)
                     }
 
                     // Product Info Section
@@ -159,7 +171,7 @@ fun ProductDetailScreen(
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "\u20b9" + product.offerPrice.toString(),
+                                    text = "\u20b9" + product.sellingPrice.toString(),
                                     style = TextStyleSmallSemiBoldBlack
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -198,7 +210,7 @@ fun ProductDetailScreen(
                     )
 
                     Text(
-                        text = "product.description" ?: "No description available.",
+                        text = product.description ?: "No description available.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = BlackAndWhiteColorScheme.onBackground,
                         modifier = Modifier.padding(16.dp)

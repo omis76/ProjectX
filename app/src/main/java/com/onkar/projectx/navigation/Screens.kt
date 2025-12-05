@@ -51,5 +51,6 @@ val hideFloatingCartButtonRoutes = listOf(
     Screen.Login.route,
     Screen.OTP.route,
     Screen.ProductDetail.route,
-    Screen.Landing.route
+    Screen.Landing.route,
+    Screen.Calendar.route
 )

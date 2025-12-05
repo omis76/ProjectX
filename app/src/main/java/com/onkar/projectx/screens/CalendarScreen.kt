@@ -64,7 +64,7 @@ fun CalendarScreen(
     val calendarUiState by calendarViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        calendarViewModel.onDateSelected(LocalDate.now())
+        calendarViewModel.onDateSelected(LocalDate.now().plusDays(1))
     }
 
     Column(
