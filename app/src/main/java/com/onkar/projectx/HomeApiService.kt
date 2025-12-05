@@ -1,9 +1,14 @@
 package com.onkar.projectx
 
+import com.onkar.projectx.data.AddressRequest
+import com.onkar.projectx.data.AddressResponse
 import com.onkar.projectx.data.BasicResponse
 import com.onkar.projectx.data.CatalogResponse
+import com.onkar.projectx.data.CustomerProfileResponse
 import com.onkar.projectx.data.DeliveryItem
 import com.onkar.projectx.data.HomeResponse
+import com.onkar.projectx.data.LocationCheckRequest
+import com.onkar.projectx.data.LocationCheckResponse
 import com.onkar.projectx.data.SubscriptionRequest
 import com.onkar.projectx.data.TokenResponse
 import com.onkar.projectx.data.UserDashboardResponse
@@ -15,6 +20,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Query
 
 interface HomeApiService {
@@ -58,6 +64,23 @@ interface HomeApiService {
 
     @GET("api/payment/methods")
     suspend fun getPaymentMethods(): List<PaymentType>
+
+    @POST("api/v1/customers/check_location/")
+    suspend fun checkLocationServiceability(
+        @Header("Authorization") token: String,
+        @Body request: LocationCheckRequest
+    ): LocationCheckResponse
+
+    @POST("api/v1/customers/address/")
+    suspend fun saveAddress(
+        @Header("Authorization") token: String,
+        @Body request: AddressRequest
+    ): AddressResponse
+
+    @GET("api/v1/customers/profile/")
+    suspend fun getCustomerProfile(
+        @Header("Authorization") token: String
+    ): CustomerProfileResponse
 }
 
 object ApiClient {

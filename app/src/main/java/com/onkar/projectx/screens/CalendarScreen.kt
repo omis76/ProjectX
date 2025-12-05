@@ -115,17 +115,18 @@ fun CalendarScreen(
             )
         }
 
-        LaunchedEffect(key1 = deliveriesToShow, key2 = productsViewModel.uiState.value.products) {
+        val productsUiState by productsViewModel.uiState.collectAsState()
+        LaunchedEffect(key1 = deliveriesToShow, key2 = productsUiState.products) {
             cartViewModel.preloadDeliveryQuantities(
                 deliveryItems = deliveriesToShow,
-                products = productsViewModel.uiState.value.products
+                products = productsUiState.products
             )
         }
 
         DeliverySection(
             isLoading = calendarUiState.isLoading,
             deliveries = deliveriesToShow,
-            products = productsViewModel.uiState.value.products,
+            products = productsUiState.products,
             cartViewModel = cartViewModel,
             productsViewModel = productsViewModel
         )

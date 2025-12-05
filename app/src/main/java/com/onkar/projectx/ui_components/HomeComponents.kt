@@ -28,8 +28,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,9 +70,11 @@ import com.onkar.projectx.ui.theme.TextStyleSmallNormalGray
 import com.onkar.projectx.ui.theme.TextStyleSmallNormalGrayStrikeThrough
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldBlack
 import com.onkar.projectx.ui.theme.greenTop
+import com.onkar.projectx.data.CustomerAddress
 import com.onkar.projectx.viewmodels.CartViewModel
 import com.onkar.projectx.viewmodels.HomeViewModel
 import com.onkar.projectx.viewmodels.ProductsViewModel
+import com.onkar.projectx.viewmodels.ProfileViewModel
 
 @Composable
 fun BannerItemSkeleton() {
@@ -141,7 +148,11 @@ fun ShimmerEffect(
 
 
 @Composable
-fun TopViewHome(navController: NavHostController, homeViewModel: HomeViewModel) {
+fun TopViewHome(
+    navController: NavHostController, 
+    homeViewModel: HomeViewModel, 
+    profileViewModel: ProfileViewModel
+) {
     val uiState = homeViewModel.userUiState.collectAsState()
     var name = ""
     var balance = ""
@@ -149,59 +160,62 @@ fun TopViewHome(navController: NavHostController, homeViewModel: HomeViewModel) 
         name = uiState.value.addressLine
         balance = uiState.value.walletBalance
     }
-    Row(
+    
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(brush = Brush.verticalGradient(colors = listOf(Color.White, greenTop)))
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(16.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                Icons.Default.AccountCircle,
-                contentDescription = "Person",
-                tint = MaterialTheme.colorScheme.secondary,
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = "Person",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(color = MaterialTheme.colorScheme.onSurface, shape = CircleShape)
+                        .clickable {
+                            navController.navigate(Screen.Profile.route)
+                        }
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Column {
+                    Text("7am tomorrow", style = TextStyleSmallNormalGray)
+                    // Show location below the time text
+                    LocationSelectionComponent(profileViewModel)
+                }
+            }
+
+            Row(
                 modifier = Modifier
-                    .size(60.dp)
-                    .background(color = MaterialTheme.colorScheme.onSurface, shape = CircleShape)
+                    .background(color = Color.White, shape = RoundedCornerShape(24.dp))
                     .clickable {
-                        navController.navigate(Screen.Profile.route)
+                        navController.navigate(Screen.Wallet.route)
                     }
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Column {
-                Text("7am tomorrow", style = TextStyleSmallNormalGray)
+                    .border(width = 1.dp, shape = RoundedCornerShape(24.dp), color = Color.Gray)
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = "Person",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    "${name} \u25bc", style = TextStyleSmallBoldBlack
+                    "\u20b9 ${balance}",
+                    style = TextStyleSmallBoldBlack
                 )
             }
         }
-
-        Row(
-            modifier = Modifier
-                .background(color = Color.White, shape = RoundedCornerShape(24.dp))
-                .clickable {
-                    navController.navigate(Screen.Wallet.route)
-                }
-                .border(width = 1.dp, shape = RoundedCornerShape(24.dp), color = Color.Gray)
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Warning,
-                contentDescription = "Person",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                "\u20b9 ${balance}",
-                style = TextStyleSmallBoldBlack
-            )
-        }
-
     }
 }
 
@@ -504,4 +518,87 @@ fun BannerGrid(
             }
         }
     }
+}
+
+@Composable
+fun LocationSelectionComponent(profileViewModel: ProfileViewModel) {
+    if (profileViewModel.selectedAddress != null) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { profileViewModel.showLocationDialog() }
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.LocationOn,
+                contentDescription = "Location",
+                tint = Color.Green,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = profileViewModel.getAddressText(profileViewModel.selectedAddress),
+                style = TextStyleSmallNormalGray,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                Icons.Default.ArrowForward,
+                contentDescription = "Change",
+                tint = Color.Gray,
+                modifier = Modifier.size(12.dp)
+            )
+        }
+    }
+
+    // Location selection dialog
+    if (profileViewModel.isLocationDialogVisible) {
+        LocationSelectionDialog(profileViewModel)
+    }
+}
+
+@Composable
+fun LocationSelectionDialog(profileViewModel: ProfileViewModel) {
+    val addresses = profileViewModel.customerProfile?.addresses ?: emptyList()
+
+    AlertDialog(
+        onDismissRequest = { profileViewModel.hideLocationDialog() },
+        title = { Text("Select Delivery Location") },
+        text = {
+            Column {
+                addresses.forEach { address ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { profileViewModel.selectAddress(address) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = "Location",
+                            tint = if (profileViewModel.selectedAddress?.id == address.id) Color.Green else Color.Gray
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = address.addressLine1,
+                                style = TextStyleSmallSemiBoldBlack
+                            )
+                            Text(
+                                text = "${address.addressLine2}, ${address.cityName}",
+                                style = TextStyleSmallNormalGray
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { profileViewModel.hideLocationDialog() }) {
+                Text("Done")
+            }
+        }
+    )
 }

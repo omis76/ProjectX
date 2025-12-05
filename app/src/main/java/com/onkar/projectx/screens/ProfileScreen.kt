@@ -34,7 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -45,6 +47,7 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.accompanist.permissions.rememberPermissionState
+import com.onkar.projectx.navigation.Screen
 import com.onkar.projectx.ui.theme.BlackAndWhiteColorScheme
 import com.onkar.projectx.ui_components.TopViewBasic
 import com.onkar.projectx.viewmodels.LocationPickerViewModel
@@ -53,16 +56,19 @@ import kotlinx.coroutines.time.withTimeoutOrNull
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavHostController) {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        TopViewBasic("Profile")
-        LocationPickerScreen()
+        TopViewBasic("Profile", navController)
+        LocationPickerScreen(navController = navController)
     }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun LocationPickerScreen(viewModel: LocationPickerViewModel = viewModel()) {
+fun LocationPickerScreen(
+    navController: NavHostController,
+    viewModel: LocationPickerViewModel = hiltViewModel()
+) {
     var selectedLocation by remember {
         mutableStateOf(LatLng(28.520383, 77.376360)) // Default to Delhi
     }
@@ -145,6 +151,7 @@ fun LocationPickerScreen(viewModel: LocationPickerViewModel = viewModel()) {
                 latLng = selectedLocation,
                 modifier = Modifier.align(Alignment.BottomCenter),
                 viewModel = viewModel,
+                navController = navController,
                 expanded = expanded,    // Pass the expanded state
                 onExpandToggle = { expanded = !expanded })
         }
@@ -156,6 +163,7 @@ fun LocationAndActionFooter(
     latLng: LatLng,
     modifier: Modifier,
     viewModel: LocationPickerViewModel,
+    navController: NavHostController,
     expanded: Boolean,
     onExpandToggle: () -> Unit
 ) {
@@ -188,10 +196,28 @@ fun LocationAndActionFooter(
         }
     }
 
+    // Reset serviceability state when location changes
+    LaunchedEffect(latLng) {
+        viewModel.resetLocationServiceability()
+    }
+
     // Show snackbar if address fails
     LaunchedEffect(address) {
         if (address == "Unable to fetch address") {
             snackbarHostState.showSnackbar("Failed to fetch location. Please try again.")
+        }
+    }
+
+    // Navigate to home after successful save
+    LaunchedEffect(viewModel.saveSuccess) {
+        if (viewModel.saveSuccess) {
+            // Wait a moment for user to see success message
+            kotlinx.coroutines.delay(1500)
+            // Navigate to Home screen and clear back stack
+            navController.navigate(Screen.Category.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
         }
     }
 
@@ -251,13 +277,87 @@ fun LocationAndActionFooter(
                     .padding(8.dp)
             )
 
+            // Display location serviceability status
+            viewModel.locationServiceable?.let { isServiceable ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .background(
+                            color = if (isServiceable) Color.Green.copy(alpha = 0.1f) else Color.Red.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (isServiceable) Icons.Default.LocationOn else Icons.Default.Refresh,
+                        contentDescription = if (isServiceable) "Serviceable" else "Not Serviceable",
+                        tint = if (isServiceable) Color.Green else Color.Red,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = viewModel.locationMessage ?: "Checking serviceability...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isServiceable) Color.Green else Color.Red
+                    )
+                }
+            } ?: run {
+                // Show loading state while checking serviceability
+                if (viewModel.isCheckingLocation) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .background(
+                                color = Color.Gray.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(6.dp)
+                            )
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Checking",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Checking serviceability...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             if (!expanded) {
                 Button(
-                    onClick = onExpandToggle, modifier = Modifier.fillMaxWidth()
+                    onClick = {
+                        if (viewModel.locationServiceable == null) {
+                            // Check serviceability first
+                            viewModel.checkLocationServiceability(latLng.latitude, latLng.longitude)
+                        } else if (viewModel.locationServiceable == true) {
+                            // Location is serviceable, open bottom sheet
+                            onExpandToggle()
+                        }
+                        // If locationServiceable == false, do nothing (button stays disabled)
+                    }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !viewModel.isCheckingLocation && viewModel.locationServiceable != false
                 ) {
-                    Text("Pick This Location")
+                    Text(
+                        when {
+                            viewModel.isCheckingLocation -> "Checking Location..."
+                            viewModel.locationServiceable == true -> "Pick This Location"
+                            viewModel.locationServiceable == false -> "Location Not Serviceable"
+                            else -> "Check Location"
+                        }
+                    )
                 }
             } else {
                 OutlinedTextField(

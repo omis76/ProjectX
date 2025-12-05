@@ -99,7 +99,7 @@ fun NavigationGraph(
             )
         }
 
-        composable(Screen.Profile.route) { ProfileScreen() }
+        composable(Screen.Profile.route) { ProfileScreen(navController) }
 
         composable(Screen.Wallet.route) { navBackStackEntry ->
             val walletViewModel: WalletViewModel = viewModel(navBackStackEntry)

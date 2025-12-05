@@ -41,6 +41,7 @@ import com.onkar.projectx.ui_components.TopViewHome
 import com.onkar.projectx.viewmodels.CartViewModel
 import com.onkar.projectx.viewmodels.HomeViewModel
 import com.onkar.projectx.viewmodels.ProductsViewModel
+import com.onkar.projectx.viewmodels.ProfileViewModel
 
 
 @Composable
@@ -51,19 +52,39 @@ fun HomeScreen(
 ) {
     Log.d("ui", "HomeScreen composed")
     val homeViewModel: HomeViewModel = hiltViewModel()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
     val systemUiController = rememberSystemUiController()
+    
     SideEffect {
         systemUiController.setStatusBarColor(Color.White, darkIcons = true)
     }
+    
     LaunchedEffect(Unit) {
-            viewModel.getCatalog(cartViewModel)
+        viewModel.getCatalog(cartViewModel)
     }
+    
     LaunchedEffect(Unit) {
         homeViewModel.fetchHomeDashboard()
         homeViewModel.fetchUserDashboard()
+        profileViewModel.fetchCustomerProfile(
+            onNotLoggedIn = {
+                // Navigate to Login screen when user is not logged in
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            },
+            onNoAddresses = {
+                // Navigate to Profile screen when user has no addresses
+                navController.navigate(Screen.Profile.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            }
+        )
     }
+    
     HomeViews(
         homeViewModel = homeViewModel,
+        profileViewModel = profileViewModel,
         navController = navController,
         productsViewModel = viewModel,
         cartViewModel = cartViewModel
@@ -74,6 +95,7 @@ fun HomeScreen(
 @Composable
 fun HomeViews(
     homeViewModel: HomeViewModel,
+    profileViewModel: ProfileViewModel,
     navController: NavHostController,
     productsViewModel: ProductsViewModel,
     cartViewModel: CartViewModel
@@ -91,7 +113,7 @@ fun HomeViews(
     val uiState by homeViewModel.homeUiState.collectAsState()
 
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-        stickyHeader { TopViewHome(navController, homeViewModel) }
+        stickyHeader { TopViewHome(navController, homeViewModel, profileViewModel) }
         item { TopBanner(adjustedHeight = 200.dp, navController) }
 
         items(uiState.sections, key = { it.title }) { banner ->

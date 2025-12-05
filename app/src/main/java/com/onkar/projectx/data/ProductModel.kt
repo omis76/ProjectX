@@ -69,6 +69,77 @@ data class Offer(
     val offerPrice: Double // Discounted price after applying the offer
 )
 
+// Location serviceability data models
+data class LocationCheckRequest(
+    val latitude: Double,
+    val longitude: Double
+)
+
+data class LocationCheckResponse(
+    @SerializedName("city_id")
+    val cityId: Int? = null,
+    @SerializedName("city_name")
+    val cityName: String? = null,
+    val error: Boolean? = null,
+    val message: String? = null
+)
+
+data class AddressRequest(
+    val id: Int? = null, // Will be null for new addresses
+    @SerializedName("address_line1")
+    val addressLine1: String,
+    @SerializedName("address_line2")
+    val addressLine2: String,
+    val latitude: Double,
+    val longitude: Double,
+    @SerializedName("city_id")
+    val cityId: Int,
+    @SerializedName("city_name")
+    val cityName: String
+)
+
+data class AddressResponse(
+    val id: Int? = null,
+    @SerializedName("address_line1")
+    val addressLine1: String? = null,
+    @SerializedName("address_line2")
+    val addressLine2: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerializedName("city_id")
+    val cityId: Int? = null,
+    @SerializedName("city_name")
+    val cityName: String? = null,
+    val error: Boolean? = null,
+    val message: String? = null
+)
+
+data class CustomerProfileResponse(
+    val phone: String? = null,
+    val name: String? = null,
+    @SerializedName("secondary_phone")
+    val secondaryPhone: String? = null,
+    val email: String? = null,
+    val status: String? = null,
+    val addresses: List<CustomerAddress>? = null,
+    val error: Boolean? = null,
+    val message: String? = null
+)
+
+data class CustomerAddress(
+    val id: Int,
+    @SerializedName("address_line1")
+    val addressLine1: String,
+    @SerializedName("address_line2")
+    val addressLine2: String,
+    val latitude: Double,
+    val longitude: Double,
+    @SerializedName("city_id")
+    val cityId: Int,
+    @SerializedName("city_name")
+    val cityName: String
+)
+
 // Helper extensions to convert String prices to Double for calculations
 fun Product.getMrpAsDouble(): Double = mrp
 fun Product.getSellingPriceAsDouble(): Double = sellingPrice

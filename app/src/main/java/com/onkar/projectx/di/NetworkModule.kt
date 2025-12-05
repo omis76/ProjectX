@@ -34,7 +34,7 @@ object NetworkModule {
         return ChuckerInterceptor.Builder(context)
             .collector(collector)
             .maxContentLength(250_000L)
-            .redactHeaders("Authorization", "Cookie")
+            //.redactHeaders("Authorization", "Cookie")
             .alwaysReadResponseBody(true)
             .build()
     }
