@@ -2,7 +2,6 @@ package com.onkar.projectx.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.onkar.projectx.data.DeliveryItem
 import com.onkar.projectx.data.Product
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -106,44 +105,18 @@ class CartViewModel : ViewModel() {
         )
     }
 
-    fun preloadDeliveryQuantities(deliveryItems: List<DeliveryItem>, products: List<Product>) {
-        val updatedCart = _cartItems.value.toMutableMap()
-
-        deliveryItems.forEach { delivery ->
-            val productId = delivery.product
-            if (!updatedCart.containsKey(productId)) {
-                val matchingProduct = products.find { it.id == productId }
-                if (matchingProduct != null) {
-                    updatedCart[productId] = matchingProduct.copy(quantity = delivery.quantity)
-                }
-            }
-        }
-
-        _cartItems.value = updatedCart
-        updateBillState()
-    }
-
-    fun syncTomorrowDeliveries(
-        token: String,
-        products: List<Product>,
-        fetchDeliveries: suspend (String, String) -> List<DeliveryItem>
-    ) {
-        viewModelScope.launch {
-            try {
-                val tomorrow = LocalDate.now().plusDays(1).toString()
-                val deliveries = fetchDeliveries(token, tomorrow)
-                preloadDeliveryQuantities(deliveries, products)
-            } catch (e: Exception) {
-                // Optional: handle error
-            }
-        }
-    }
 
     // ===== DATE-SPECIFIC CART OPERATIONS =====
     
     // Set selected date for calendar context
     fun setSelectedDate(date: String) {
         _selectedDate.value = date
+    }
+    
+    fun updateBillStateForSelectedDate() {
+        _selectedDate.value?.let { date ->
+            updateBillStateForDate(date)
+        } ?: updateBillState() // fallback to general bill
     }
     
     // Add product for specific date

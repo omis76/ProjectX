@@ -114,7 +114,7 @@ fun HomeViews(
 
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
         stickyHeader { TopViewHome(navController, homeViewModel, profileViewModel) }
-        item { TopBanner(adjustedHeight = 200.dp, navController) }
+        item { TopBanner(adjustedHeight = 200.dp, navController, uiState.banners) }
 
         items(uiState.sections, key = { it.title }) { banner ->
             if (uiState.isLoading) {
@@ -132,7 +132,7 @@ fun HomeViews(
 }
 
 @Composable
-fun TopBanner(adjustedHeight: Dp, navController: NavHostController) {
+fun TopBanner(adjustedHeight: Dp, navController: NavHostController, banners: List<com.onkar.projectx.data.Banner>) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -143,6 +143,14 @@ fun TopBanner(adjustedHeight: Dp, navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             SearchBarView { navController.navigate(Screen.Search.route) }
+            
+            // Show banners if available
+            if (banners.isNotEmpty()) {
+                com.onkar.projectx.ui_components.BannerCarousel(
+                    banners = banners,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }

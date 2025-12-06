@@ -5,7 +5,9 @@ import com.onkar.projectx.data.AddressResponse
 import com.onkar.projectx.data.BasicResponse
 import com.onkar.projectx.data.CatalogResponse
 import com.onkar.projectx.data.CustomerProfileResponse
-import com.onkar.projectx.data.DeliveryItem
+import com.onkar.projectx.data.DashboardResponse
+import com.onkar.projectx.data.DayOrderResponse
+import com.onkar.projectx.data.DayStatusResponse
 import com.onkar.projectx.data.HomeResponse
 import com.onkar.projectx.data.LocationCheckRequest
 import com.onkar.projectx.data.LocationCheckResponse
@@ -24,6 +26,16 @@ import retrofit2.http.PUT
 import retrofit2.http.Query
 
 interface HomeApiService {
+    // New Dashboard API
+    @GET("api/v1/dashboard/home")
+    suspend fun getDashboardHome(
+        @Header("Authorization") token: String,
+        @Header("x-source") source: String = "app",
+        @Header("x-device") device: String = "android",
+        @Header("x-app-version") appVersion: String = "1.0-debug"
+    ): DashboardResponse
+    
+    // Legacy API kept for backward compatibility
     @GET("api/dashboard/home/")
     suspend fun getHomeData(
         @Header("Authorization") token: String
@@ -50,11 +62,18 @@ interface HomeApiService {
         @Query("city_id") cityId: Int = 1 // Default to city_id=1
     ): CatalogResponse
 
-    @GET("api/orders/my-deliveries/")
-    suspend fun getDeliveriesForDate(
+    // Calendar APIs
+    @GET("api/v1/orders/days_statuses")
+    suspend fun getDaysStatuses(
+        @Header("Authorization") token: String
+    ): DayStatusResponse
+
+    @GET("api/v1/orders/day")
+    suspend fun getDayOrder(
         @Header("Authorization") token: String,
         @Query("date") date: String
-    ): List<DeliveryItem>
+    ): DayOrderResponse
+
 
     @POST("api/orders/subscriptions/")
     suspend fun createOrderOrSubscription(

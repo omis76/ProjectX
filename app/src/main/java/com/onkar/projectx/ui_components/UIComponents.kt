@@ -386,6 +386,27 @@ fun Modifier.verticalGradientBackground(start: Color, end: Color): Modifier {
 fun CalendarDayItem(
     day: CalendarDay, isSelected: Boolean, onClick: () -> Unit
 ) {
+    // Get status color based on order status
+    val statusColor = when (day.orderStatus) {
+        "delivered" -> Color(0xFF4CAF50) // Green
+        "pending", "packed", "picked" -> Color(0xFFFF9800) // Orange
+        "not_delivered" -> Color(0xFFF44336) // Red
+        "no_subscription" -> Color(0xFF9E9E9E) // Gray
+        null -> Color(0xFF9E9E9E) // Default gray when loading
+        else -> Color(0xFF9E9E9E) // Default gray for unknown status
+    }
+    
+    val statusText = when (day.orderStatus) {
+        "delivered" -> "Delivered"
+        "pending" -> "Pending"
+        "packed" -> "Packed"
+        "picked" -> "Picked"
+        "not_delivered" -> "Failed"
+        "no_subscription" -> "No Order"
+        null -> "Loading..."
+        else -> "Unknown"
+    }
+    
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -412,15 +433,15 @@ fun CalendarDayItem(
 
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "${day.itemCount} items",
+            text = statusText,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = Color.White,
             modifier = Modifier
                 .background(
-                    color = Color.Green,
+                    color = if (isSelected) Color.White.copy(alpha = 0.9f) else statusColor,
                     shape = RoundedCornerShape(bottomEnd = 8.dp, bottomStart = 8.dp)
                 )
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 12.dp, vertical = 2.dp)
         )
     }
 }

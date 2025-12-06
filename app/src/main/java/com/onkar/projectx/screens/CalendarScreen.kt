@@ -37,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.onkar.projectx.data.CalendarDay
+import com.onkar.projectx.data.DayOrderResponse
 import com.onkar.projectx.data.DeliveryItem
 import com.onkar.projectx.data.Product
 import com.onkar.projectx.mergeTodayDeliveriesWithCart
@@ -44,7 +45,7 @@ import com.onkar.projectx.mergeDeliveriesWithCartForDate
 import com.onkar.projectx.ui.theme.TextStyleSmallBoldBlack
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldBlack
 import com.onkar.projectx.ui.theme.TextStyleSmallSemiBoldRed
-import com.onkar.projectx.ui_components.BillUI
+import com.onkar.projectx.ui_components.CalendarBillUI
 import com.onkar.projectx.ui_components.CalendarDayItem
 import com.onkar.projectx.ui_components.CancellationPolicyUI
 import com.onkar.projectx.ui_components.WideProductView
@@ -64,7 +65,15 @@ fun CalendarScreen(
     val calendarUiState by calendarViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        calendarViewModel.onDateSelected(LocalDate.now().plusDays(1))
+        val tomorrow = LocalDate.now().plusDays(1)
+        calendarViewModel.onDateSelected(tomorrow)
+        cartViewModel.setSelectedDate(tomorrow.toString())
+    }
+    
+    LaunchedEffect(calendarUiState.selectedDate) {
+        // Update cart's selected date whenever calendar selection changes
+        cartViewModel.setSelectedDate(calendarUiState.selectedDate.toString())
+        cartViewModel.updateBillStateForSelectedDate()
     }
 
     Column(
@@ -79,14 +88,21 @@ fun CalendarScreen(
             selectedDate = calendarUiState.selectedDate,
             onDateSelected = { selectedDate ->
                 calendarViewModel.onDateSelected(selectedDate)
+                cartViewModel.setSelectedDate(selectedDate.toString())
+                cartViewModel.updateBillStateForSelectedDate()
             }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Label: All Items for Tomorrow
+        // Label: All Items for selected date
+        val dateLabel = when {
+            calendarUiState.selectedDate == LocalDate.now() -> "today"
+            calendarUiState.selectedDate == LocalDate.now().plusDays(1) -> "tomorrow"
+            else -> calendarUiState.selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd"))
+        }
         Text(
-            text = "All items for tomorrow",
+            text = "All items for $dateLabel",
             style = TextStyleSmallBoldBlack,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -116,16 +132,11 @@ fun CalendarScreen(
         }
 
         val productsUiState by productsViewModel.uiState.collectAsState()
-        LaunchedEffect(key1 = deliveriesToShow, key2 = productsUiState.products) {
-            cartViewModel.preloadDeliveryQuantities(
-                deliveryItems = deliveriesToShow,
-                products = productsUiState.products
-            )
-        }
 
         DeliverySection(
-            isLoading = calendarUiState.isLoading,
+            isLoading = calendarUiState.isLoadingDayOrder,
             deliveries = deliveriesToShow,
+            dayOrder = calendarUiState.dayOrder,
             products = productsUiState.products,
             cartViewModel = cartViewModel,
             productsViewModel = productsViewModel
@@ -170,7 +181,12 @@ fun CalendarScreen(
             }
         }
 
-        BillUI(cartViewModel)
+        // Use CalendarBillUI for date-specific bill calculation
+        CalendarBillUI(
+            dayOrder = calendarUiState.dayOrder,
+            cartProducts = cartProductsForDate,
+            selectedDate = selectedDateString
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -182,6 +198,7 @@ fun CalendarScreen(
 fun DeliverySection(
     isLoading: Boolean,
     deliveries: List<DeliveryItem>,
+    dayOrder: DayOrderResponse?,
     products: List<Product>,
     cartViewModel: CartViewModel,
     productsViewModel: ProductsViewModel
@@ -198,23 +215,132 @@ fun DeliverySection(
         return
     }
 
-    if (deliveries.isEmpty()) {
+    // Prefer new day order data over legacy deliveries
+    val orderProducts = dayOrder?.products ?: emptyList()
+    
+    if (orderProducts.isEmpty() && deliveries.isEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("No deliveries scheduled", style = TextStyleSmallSemiBoldBlack)
+            Text(
+                if (dayOrder?.status == "no_subscription") "No orders for this day" 
+                else "No deliveries scheduled", 
+                style = TextStyleSmallSemiBoldBlack
+            )
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(color = Color.White, shape = RoundedCornerShape(16.dp)),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .background(color = Color.White, shape = RoundedCornerShape(16.dp)),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
+    ) {
+        // Show day status if available
+        dayOrder?.let { order ->
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Order Status:",
+                        style = TextStyleSmallBoldBlack
+                    )
+                    Text(
+                        order.status.capitalize(),
+                        style = TextStyleSmallSemiBoldBlack,
+                        color = when (order.status) {
+                            "delivered" -> Color(0xFF4CAF50)
+                            "pending", "packed", "picked" -> Color(0xFFFF9800)
+                            "not_delivered" -> Color(0xFFF44336)
+                            else -> Color(0xFF9E9E9E)
+                        }
+                    )
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color.Gray.copy(alpha = 0.3f))
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+        
+        // Show order products with quantities
+        if (orderProducts.isNotEmpty()) {
+            itemsIndexed(orderProducts) { index, orderProduct ->
+                val product = products.find { it.id == orderProduct.productId.toString() }
+                if (product != null) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    product.name,
+                                    style = TextStyleSmallSemiBoldBlack
+                                )
+                                Text(
+                                    "₹${orderProduct.price}",
+                                    style = TextStyleSmallBoldBlack,
+                                    color = Color(0xFF4CAF50)
+                                )
+                            }
+                            Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                                Text(
+                                    "Ordered: ${orderProduct.orderedQuantity}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    "Delivered: ${orderProduct.deliveredQuantity}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (orderProduct.deliveredQuantity > 0) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                                )
+                                Text(
+                                    "Status: ${orderProduct.status.capitalize()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = when (orderProduct.status) {
+                                        "delivered" -> Color(0xFF4CAF50)
+                                        "packed", "picked" -> Color(0xFFFF9800)
+                                        else -> Color(0xFF9E9E9E)
+                                    }
+                                )
+                            }
+                        }
+                        
+                        if (index < orderProducts.size - 1) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(Color.Gray.copy(alpha = 0.3f))
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
+                } else {
+                    Text(
+                        "Product ID ${orderProduct.productId} not found",
+                        style = TextStyleSmallSemiBoldRed,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        } else {
+            // Fallback to legacy deliveries
             itemsIndexed(deliveries) { index, delivery ->
                 val product = products.find { it.id == delivery.product }
                 if (product != null) {

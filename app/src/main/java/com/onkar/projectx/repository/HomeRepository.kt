@@ -1,7 +1,6 @@
 package com.onkar.projectx.repository
 
 import com.onkar.projectx.data.CatalogResponse
-import com.onkar.projectx.data.DeliveryItem
 import com.onkar.projectx.data.HomeResponse
 import com.onkar.projectx.data.Resource
 import com.onkar.projectx.data.UserDashboardResponse
@@ -28,10 +27,6 @@ interface HomeRepository {
      */
     fun getCatalog(): Flow<Resource<CatalogResponse>>
     
-    /**
-     * Fetches deliveries for a specific date
-     */
-    fun getDeliveriesForDate(date: String): Flow<Resource<List<DeliveryItem>>>
     
     /**
      * Clears cached data (useful for refresh operations)

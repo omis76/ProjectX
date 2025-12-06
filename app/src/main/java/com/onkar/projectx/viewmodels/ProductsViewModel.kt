@@ -3,17 +3,18 @@ package com.onkar.projectx.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onkar.projectx.HomeApiService
+import com.onkar.projectx.data.AppDataManager
 import com.onkar.projectx.data.CategoryModel
 import com.onkar.projectx.data.DataStoreManager
 import com.onkar.projectx.data.Product
 import com.onkar.projectx.data.SubcategoryModel
 // import com.onkar.projectx.data.generateFakeCategoriesAndProducts
-import com.onkar.projectx.di.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import android.util.Log
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ProductsViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager,
-    private val homeApiService: HomeApiService
+    private val homeApiService: HomeApiService,
+    private val appDataManager: AppDataManager
 ) : ViewModel() {
     private val _plpUiState = MutableStateFlow(PLPUiState())
     val plpUiState: StateFlow<PLPUiState> = _plpUiState
@@ -32,6 +34,52 @@ class ProductsViewModel @Inject constructor(
     var productList = emptyList<Product>()
     var categoryList = emptyList<CategoryModel>()
 
+    init {
+        loadCachedData()
+        observeDataChanges()
+    }
+
+    private fun loadCachedData() {
+        // Load cached data immediately if available
+        val cachedProducts = appDataManager.getAllProducts()
+        val cachedCategories = appDataManager.getAllCategories()
+        
+        if (cachedProducts.isNotEmpty()) {
+            productList = cachedProducts
+            categoryList = cachedCategories
+            _uiState.value = _uiState.value.copy(
+                products = cachedProducts,
+                categories = cachedCategories
+            )
+        }
+    }
+
+    private fun observeDataChanges() {
+        // Observe changes to cached product data
+        viewModelScope.launch {
+            appDataManager.productsData.collectLatest { catalogResponse ->
+                catalogResponse?.let { catalog ->
+                    val flatProductList = mutableListOf<Product>()
+                    catalog.categories.forEach { category ->
+                        category.subcategories.forEach { subcategory ->
+                            subcategory.products.forEach { product ->
+                                product.subcategoryId = subcategory.id.toIntOrNull()
+                                flatProductList.add(product)
+                            }
+                        }
+                    }
+                    
+                    productList = flatProductList
+                    categoryList = catalog.categories
+                    _uiState.value = _uiState.value.copy(
+                        products = flatProductList,
+                        categories = catalog.categories,
+                        error = null
+                    )
+                }
+            }
+        }
+    }
 
     fun getCatalog(cartViewModel: CartViewModel) {
         Log.d("ProductsViewModel", "getCatalog called")
@@ -71,12 +119,6 @@ class ProductsViewModel @Inject constructor(
                         isLoading = false,
                         products = flatProductList,
                         categories = response.categories, error = null
-                    )
-
-                    cartViewModel.syncTomorrowDeliveries(
-                        token = token,
-                        products = flatProductList,
-                        fetchDeliveries = OrderRepository::getDeliveriesForDate
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(

@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -24,6 +25,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.onkar.projectx.data.Banner
 import com.onkar.projectx.data.CategoryModel
 import com.onkar.projectx.data.GenericItem
 import com.onkar.projectx.data.HomeItem
@@ -239,7 +243,7 @@ fun HomeProductView(
         ) {
             AsyncImage(
                 model = item.image,
-                contentScale = ContentScale.FillBounds,
+                contentScale = ContentScale.Crop,
                 contentDescription = "Product Image",
                 modifier = Modifier
                     .fillMaxSize()
@@ -400,14 +404,15 @@ fun BannerItemView(
                     items = banner.items,
                     viewModel = viewModel,
                     navController = navController,
-                    cartViewModel = cartViewModel
+                    cartViewModel = cartViewModel,
+                    visibleCount = 2// banner.spanCount?.takeIf { it > 0 } ?: 3
                 )
             }
 
             LayoutType.GRID -> {
                 BannerGrid(
                     banner.items,
-                    columns = 4,
+                    columns = banner.spanCount?.takeIf { it > 0 } ?: 4,
                     viewModel,
                     navController = navController,
                     cartViewModel = cartViewModel
@@ -422,10 +427,10 @@ fun BannerItemView(
 @Composable
 fun BannerItemViewWithPartialCell(
     items: List<HomeItem>,
-    visibleCount: Int = 3,  // Number of fully visible items in one view
     viewModel: ProductsViewModel,
     cartViewModel: CartViewModel,
-    navController: NavHostController
+    navController: NavHostController,
+    visibleCount: Int = 3  // Number of fully visible items in one view
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val spacing = 8.dp // Space between items
@@ -601,4 +606,115 @@ fun LocationSelectionDialog(profileViewModel: ProfileViewModel) {
             }
         }
     )
+}
+
+@Composable
+fun BannerCarousel(
+    banners: List<Banner>,
+    modifier: Modifier = Modifier
+) {
+    if (banners.isEmpty()) return
+    
+    val pagerState = rememberPagerState(pageCount = { banners.size })
+    
+    Column(modifier = modifier) {
+        // Banner carousel
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 0.dp),
+                pageSpacing = 0.dp,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                BannerItem(banner = banners[page])
+            }
+        }
+        
+        // Tab indicators
+        if (banners.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(banners.size) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(
+                                color = if (pagerState.currentPage == index) 
+                                    Color.White else Color.White.copy(alpha = 0.5f),
+                                shape = CircleShape
+                            )
+                    )
+                    if (index < banners.size - 1) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BannerItem(banner: Banner) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+    ) {
+        // Banner image
+        AsyncImage(
+            model = banner.image_url,
+            contentDescription = banner.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        
+        // Gradient overlay for transparency at top, opaque at bottom
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent, // Transparent at top to blend with green
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.1f), // Slight darkening at bottom
+                            Color.Black.copy(alpha = 0.3f)  // More darkening at bottom
+                        ),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY
+                    )
+                )
+        )
+        
+        // Banner text (if needed)
+        if (banner.title.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = banner.title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        shadow = androidx.compose.ui.graphics.Shadow(
+                            color = Color.Black.copy(alpha = 0.8f),
+                            offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                            blurRadius = 3f
+                        )
+                    )
+                )
+            }
+        }
+    }
 }

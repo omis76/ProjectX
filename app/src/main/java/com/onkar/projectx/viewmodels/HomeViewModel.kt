@@ -13,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val homeRepository: HomeRepository
+    private val homeRepository: HomeRepository,
+    private val appDataManager: AppDataManager
 ) : ViewModel() {
 
     private val _homeUiState = MutableStateFlow(HomeDashboardUiState())
@@ -21,6 +22,58 @@ class HomeViewModel @Inject constructor(
 
     private val _userUiState = MutableStateFlow(UserDashboardUiState())
     val userUiState: StateFlow<UserDashboardUiState> = _userUiState
+
+    init {
+        loadCachedData()
+        observeDataChanges()
+    }
+
+    private fun loadCachedData() {
+        // Load cached data immediately if available
+        val cachedBanners = appDataManager.getHomeBanners()
+        val cachedSections = appDataManager.getHomeSections()
+        
+        if (cachedBanners.isNotEmpty() || cachedSections.isNotEmpty()) {
+            _homeUiState.value = _homeUiState.value.copy(
+                banners = cachedBanners,
+                sections = cachedSections
+            )
+        }
+
+        // Load cached user data
+        val defaultAddress = appDataManager.getDefaultAddress()
+        if (defaultAddress != null) {
+            _userUiState.value = _userUiState.value.copy(
+                addressLine = defaultAddress.addressLine1,
+                fullAddress = "${defaultAddress.addressLine1}, ${defaultAddress.cityName}"
+            )
+        }
+    }
+
+    private fun observeDataChanges() {
+        // Observe changes to cached data
+        viewModelScope.launch {
+            appDataManager.homeData.collectLatest { homeData ->
+                homeData?.let {
+                    _homeUiState.value = _homeUiState.value.copy(
+                        banners = it.banners,
+                        sections = it.items
+                    )
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            appDataManager.profileData.collectLatest { profile ->
+                profile?.addresses?.firstOrNull()?.let { address ->
+                    _userUiState.value = _userUiState.value.copy(
+                        addressLine = address.addressLine1,
+                        fullAddress = "${address.addressLine1}, ${address.cityName}"
+                    )
+                }
+            }
+        }
+    }
 
     fun fetchHomeDashboard() {
         viewModelScope.launch {

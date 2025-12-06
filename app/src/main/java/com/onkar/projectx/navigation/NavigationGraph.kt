@@ -31,6 +31,7 @@ import com.onkar.projectx.screens.ProductDetailScreen
 import com.onkar.projectx.screens.ProfileScreen
 import com.onkar.projectx.screens.SplashScreen
 import com.onkar.projectx.screens.WalletScreen
+import com.onkar.projectx.screens.AppLoadingScreen
 import com.onkar.projectx.viewmodels.AuthViewModel
 import com.onkar.projectx.viewmodels.CartViewModel
 import com.onkar.projectx.viewmodels.ProductsViewModel
@@ -48,7 +49,7 @@ fun NavigationGraph(
     Log.d("ComposableDebug", "Navigation Graph Composable called")
     AnimatedNavHost(
         navController = navController,
-        startDestination = Screen.Landing.route,
+        startDestination = Screen.AppLoading.route,
         enterTransition = {
             slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn()
         },
@@ -61,6 +62,10 @@ fun NavigationGraph(
         popExitTransition = {
             slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut()
         }) {
+
+        composable(route = Screen.AppLoading.route) {
+            AppLoadingScreen(navController)
+        }
 
         composable(route = Screen.Landing.route) {
             LandingScreen(navController, authViewModel)
